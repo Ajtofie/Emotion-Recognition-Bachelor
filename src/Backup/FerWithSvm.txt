@@ -1,101 +1,10 @@
-# coding=utf-8
-# Import libraries
-import os
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-from pylab import rcParams
-import time
-from sklearn import svm, metrics
-import pip
-from sklearn.metrics import confusion_matrix
-from sklearn.model_selection import KFold
-from sklearn.model_selection import GridSearchCV
-from pkg_resources import resource_listdir as res
-import face_recognition
-import random
-
-def print_passed_time(time_start):
-    print("--- %s seconds ---" % round(time.clock() - time_start, 4))
-
-def get_label_from_filename(filename):
-    """ Given a filename of the format 'NM.NE2.93.tiff', return the label 'NE'."""
-    index = filename.find('.')
-    return filename[index + 1:index + 3]
-
-rcParams['figure.figsize'] = 40, 40
-
-# set start time
-compilation_start_time = time.clock()
-
-rows = 64
-cols = 64
-channels = 3
-num_classes = 7
-
-# AF: Afraid, AN: Angry, NE: Neutral, SA: Sad, HA: Happy
-emotion_to_int = {"AF": 0, "AN": 1, "NE": 2, "SA": 3, "HA": 4}
-int_to_emotion = {0: "AF", 1: "AN", 2: "NE", 3: "SA", 4: "HA"}
-emotion_list = emotion_to_int.keys()
-
-img_data_list = []
-labels_list = []
-
-print("Reading the img files...")
-data_path = 'C:/Users/Matej/IdeaProjects/pythonTest/resources/dataset'
-for img in os.listdir(data_path):
-    if "jpg" not in img: continue  # Process only img files
-    # Read the image
-    input_img = cv2.imread(data_path + "/" + img)
-    input_img_resize = cv2.resize(input_img, (rows, cols))
-    img_data_list.append(input_img_resize)
-
-# Load the jpg files into numpy arrays
-biden_image = face_recognition.load_image_file("biden.jpg")
-obama_image = face_recognition.load_image_file("obama.jpg")
-unknown_image = face_recognition.load_image_file("obama2.jpg")
-
-# Get the face encodings for each face in each image file
-# Since there could be more than one face in each image, it returns a list of encodings.
-# But since I know each image only has one face, I only care about the first encoding in each image, so I grab index 0.
-try:
-    biden_face_encoding = face_recognition.face_encodings(biden_image)[0]
-    obama_face_encoding = face_recognition.face_encodings(obama_image)[0]
-    unknown_face_encoding = face_recognition.face_encodings(unknown_image)[0]
-except IndexError:
-    print("I wasn't able to locate any faces in at least one of the images. Check the image files. Aborting...")
-    quit()
-
-known_faces = [
-    biden_face_encoding,
-    obama_face_encoding
-]
-
-# results is an array of True/False telling if the unknown face matched anyone in the known_faces array
-results = face_recognition.compare_faces(known_faces, unknown_face_encoding)
-
-print("Is the unknown face a picture of Biden? {}".format(results[0]))
-print("Is the unknown face a picture of Obama? {}".format(results[1]))
-print("Is the unknown face a new person that we've never seen before? {}".format(not True in results))
-
-
-start_time = time.clock()
-
-    # Read the label
-    emotion = get_label_from_filename(img)
-    emotion_int = emotion_to_int[emotion]  # convert to index
-    labels_list.append(emotion)
-
-img_data = np.array(img_data_list)
-img_data = img_data.astype('float32')
-img_data = img_data / 255  # Normalize between [0-1]
-img_data = img_data.reshape((len(img_data), -1))  # Flatten the images
-labels = np.array(labels_list)
-
 num_images = img_data.shape[0]
 
+# Read the label and save emotions in numpy array
+labels = np.array(EmotionPrep.prep_emotions_for_classifier_with_data_path(data_path))
+
 # Split the data into train and test set
+print("Splitting data into train andF test set...")
 train_size = int(num_images * 0.8)  # reserve 80% for training, 20% for testing
 train_images = img_data[0:train_size]
 train_labels = labels[0:train_size]
@@ -108,65 +17,10 @@ print("-- train_labels.shape: ", train_labels.shape)
 print("-- test_images.shape: ", test_images.shape)
 print("-- test_labels.shape: ", test_labels.shape)
 print("-- The number of images: ", num_images)
-print_passed_time(start_time)
 
-# Create an NxN display of samples
-# TODO
+# svm_classifier = FerSvm.classify(train_images, train_labels, test_images, test_labels)
+FerRf.classify(train_images, train_labels, test_images, test_labels)
+# FerKnn.classify(train_images, train_labels, test_images, test_labels)
 
-
-# Create a classifier: a support vector classifier
-# This is with RBF kernel
-start_time = time.clock()
-classifier = svm.SVC(gamma=0.001)
-
-print("classifier: ", classifier)
-# C: From the doc: "For larger values of C, a smaller margin will be accepted if the decision
-# .  function is better at classifying all training points correctly. A lower C will encourage
-#    a larger margin, therefore a simpler decision function, at the cost of training accuracy.
-#     In other words ``C`` behaves as a regularization parameter in the SVM."
-# OVR: One-versus-rest (alternative: ovo -- One-versus-one)
-# Kernel (RBF): Radial Basis Functions
-# Probability (False): Estimate the probability for class membership from scores
-# class_weight (None): Give more weight to some classess
-# coef0: Constant r in the kernel definition (see above)
-
-# We learn the SVM model on the training data
-classifier.fit(train_images, train_labels)
-
-# Now predict on the test data
-predicted = classifier.predict(test_images)
-expected = test_labels
-
-print("Classification report for classifier %s:\n%s\n"
-      % (classifier, metrics.classification_report(expected, predicted)))
-print_passed_time(start_time)
-
-start_time = time.clock()
-# Specify the ranges to be searched for hyper-parameters
-# C_range = np.logspace(-2, 10, 5)
-# gamma_range = np.logspace(-9, 3, 5)
-# param_grid = dict(gamma=gamma_range, C=C_range)
-
-# Do cross validation
-# cv = KFold() # default n_splits = 5
-# grid = GridSearchCV(svm.SVC(), param_grid=param_grid, cv=cv)
-# grid.fit(train_images, train_labels)
-
-# print("The best parameters are %s with a score of %0.2f"
-#      % (grid.best_params_, grid.best_score_))
-
-print_passed_time(start_time)
-
-start_time = time.clock()
-
-best_SVM = svm.SVC(C=10.0, gamma=0.001)
-best_SVM.fit(train_images, train_labels)
-
-predicted = best_SVM.predict(test_images)
-expected = test_labels
-
-print("Classification report for classifier %s:\n%s\n"
-      % (best_SVM, metrics.classification_report(expected, predicted)))
-print_passed_time(start_time)
-# overall compilation time
-print_passed_time(compilation_start_time)
+# Emotion Recognition via Video (Webcam)
+# Camera.start_video_capture(svm_classifier)

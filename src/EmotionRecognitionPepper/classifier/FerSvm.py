@@ -7,6 +7,7 @@ from sklearn import svm, metrics
 import src.EmotionRecognitionPepper.visualize.ConfusionMatrix
 import src.EmotionRecognitionPepper.loader.EmotionPrep
 import src.EmotionRecognitionPepper.loader.ImageLoader
+import src.EmotionRecognitionPepper.visualize.Camera as Camera
 from src.EmotionRecognitionPepper.util import Timer, InputQuery
 from sklearn.model_selection import KFold
 from sklearn.model_selection import GridSearchCV
@@ -27,6 +28,12 @@ def classify(train_images, train_labels, test_images, test_labels):
     classifier = svm.SVC(kernel='linear', gamma=0.001)
     print("classifier: ", classifier)
 
+    nsamples, nx, ny = train_images.shape
+    train_dataset = train_images.reshape((nsamples,nx*ny))
+
+    nsamples, nx, ny = test_images.shape
+    test_dataset = test_images.reshape((nsamples,nx*ny))
+
     # We learn the SVM model on the training data
     # classifier.fit(train_images, train_labels)
     #
@@ -42,13 +49,13 @@ def classify(train_images, train_labels, test_images, test_labels):
 
     # do cross_validation to find the best hyperparameters
     if InputQuery.input_query("do cross validation"):
-        print("Searching for best hyperparameters") # prints although not going in?????
-        cross_validation(train_images, train_labels)
+        print("Searching for best hyperparameters")
+        cross_validation(train_dataset, train_labels)
 
     best_svm = svm.SVC(kernel='linear', C=8.68511373751352, gamma=1e-09)
-    best_svm.fit(train_images, train_labels)
+    best_svm.fit(train_dataset, train_labels)
 
-    predicted = best_svm.predict(test_images)
+    predicted = best_svm.predict(test_dataset)
     expected = test_labels
 
     print("Classification report for classifier %s:\n%s\n"
@@ -56,6 +63,8 @@ def classify(train_images, train_labels, test_images, test_labels):
 
     # print confusion matrix for visibility
     src.EmotionRecognitionPepper.visualize.ConfusionMatrix.show_confusion_matrix(expected, predicted)
+
+    return best_svm
 
 
 def cross_validation(train_images, train_labels):

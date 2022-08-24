@@ -8,7 +8,6 @@ import face_recognition
 import numpy as np
 
 labels_list = []
-
 emotion_to_int = {"AF": 0, "AN": 1, "NE": 2, "SA": 3, "HA": 4}
 int_to_emotion = {0: "AF", 1: "AN", 2: "NE", 3: "SA", 4: "HA"}
 emotion_list = emotion_to_int.keys()
