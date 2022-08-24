@@ -67,7 +67,7 @@ def classify(train_images, train_labels, test_images, test_labels):
     pprint(rf_random.best_params_)
 
 
-def evaluate(model, test_images, test_labels):
+def evaluate(model, test_images, test_labels): # TODO refactor since it doesnt work
     predictions = model.predict(test_images)
     print predictions
     print test_labels
