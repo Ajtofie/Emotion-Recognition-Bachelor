@@ -3,7 +3,7 @@
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report
-import src.EmotionRecognitionPepper.loader.EmotionPrep
+import src.EmotionRecognitionPepper.processor.EmotionLoader
 import src.EmotionRecognitionPepper.visualize.ConfusionMatrix
 
 
